@@ -7,6 +7,25 @@ terraform {
   }
 }
 
+//Lookup data
+
+data "aws_ami" "centos"{
+    most_recent = true
+    filter{
+        name = "name"
+        values = ["CentOS-7-2111-20220330_2*"]
+    }
+    filter {
+        name = "architecture"
+        values = ["x86_64"]
+    }
+    filter {
+        name = "virtualization-type"
+        values = ["hvm"]
+    }
+    owners = ["679593333241"]
+}
+
 //Network configuration for infrastructure
 provider "aws" {
     region = "ap-southeast-1"
@@ -43,8 +62,8 @@ resource "aws_route_table_association" "nagios" {
 
 //Security Group for Nagios Configuration
 
-resource "aws_security_group" "nagios-web"{
-    name = "Nagios Web Security"
+resource "aws_security_group" "nagios-base"{
+    name = "Nagios Service base security group"
     description = "Allow application to be access from the internet"
     vpc_id = aws_vpc.nagios.id
 
@@ -56,6 +75,93 @@ resource "aws_security_group" "nagios-web"{
         to_port = "22"
     }
 
+    ingress {
+        description = "Allow HTTP"
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+        from_port = "80"
+        to_port = "80"
+    }
+
+    ingress {
+        description = "Allow HTTPS"
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+        from_port = "443"
+        to_port = "443"
+    }
+
+    ingress {
+        description = "Allow HTTP"
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+        from_port = "80"
+        to_port = "80"
+    }
+
+    egress {
+        from_port        = 0
+        to_port          = 0
+        protocol         = "-1"
+        cidr_blocks      = ["0.0.0.0/0"]
+        ipv6_cidr_blocks = ["::/0"]
+    }
+
+}
+
+resource "aws_security_group" "nagios-nrpe" {
+    name = "Nagios NRPE Security Group"
+    description = "Allow NRPE port to be access by nagios client from the same subnet"
+    vpc_id = aws_vpc.nagios.id
+
+    ingress {
+        description = "Allow NRPE"
+        protocol = "tcp"
+        from_port= 5666
+        to_port=5666
+        cidr_blocks = [aws_subnet.nagios.cidr_block]
+    }
 }
 
 
+//EC2 configuration for infrastructure
+
+resource "aws_key_pair" "kms_key" {
+  key_name   = "nagios-kms"
+  public_key = var.ssh_pubkey
+}
+
+resource "aws_instance" "nagios-web" {
+    ami = data.aws_ami.centos.id
+    instance_type = var.instance_type
+    vpc_security_group_ids = [aws_security_group.nagios-base.id]
+    key_name = aws_key_pair.kms_key.key_name
+    subnet_id = aws_subnet.nagios.id
+    tags = {
+        type = "nagios-kms-web"
+        terraform = "true"
+    }
+}
+
+
+resource "aws_instance" "nagios-nrpe" {
+    ami = data.aws_ami.centos.id
+    instance_type = var.instance_type
+    vpc_security_group_ids = [aws_security_group.nagios-base.id,aws_security_group.nagios-nrpe.id]
+    key_name = aws_key_pair.kms_key.key_name
+    subnet_id = aws_subnet.nagios.id
+    tags = {
+        type = "nagios-kms-nrpe"
+        terraform = "true"
+    }
+}
+
+resource "aws_eip" "nagios-web" {
+    instance = aws_instance.nagios-web.id
+    vpc = true
+}
+
+resource "aws_eip" "nagios-nrpe" {
+    instance = aws_instance.nagios-nrpe.id
+    vpc = true
+}

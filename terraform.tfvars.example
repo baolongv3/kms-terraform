@@ -1,0 +1,5 @@
+ssh_pubkey = "ssh_rsa xdxd"
+cidr_block = "<VPC cidr block here>"
+subnet_cidr_block = "<VPC subnet CIDR block here>"
+instance_type = "<Instance type here. Ex: t2_micro>"
+
