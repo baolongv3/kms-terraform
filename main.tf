@@ -5,6 +5,12 @@ terraform {
       version = "~> 3.0"
     }
   }
+
+  backend "s3" {
+    bucket = "blv3-tf-backend"
+    key = "terraform-state/key-state"
+    region = "ap-southeast-1"
+  }
 }
 
 //Lookup data
