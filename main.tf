@@ -138,7 +138,7 @@ resource "aws_key_pair" "kms_key" {
 }
 
 resource "aws_instance" "nagios-web" {
-    ami = data.aws_ami.centos.id
+    ami = "ami-0bd717e4b66a1927a"
     instance_type = var.instance_type
     vpc_security_group_ids = [aws_security_group.nagios-base.id]
     key_name = aws_key_pair.kms_key.key_name
