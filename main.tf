@@ -45,6 +45,7 @@ resource "aws_vpc" "nagios" {
 resource "aws_subnet" "nagios" {
     vpc_id = aws_vpc.nagios.id
     cidr_block = var.subnet_cidr_block
+    availability_zone = var.availability_zone
 }
 
 resource "aws_internet_gateway" "nagios"{
@@ -127,6 +128,14 @@ resource "aws_security_group" "nagios-nrpe" {
         to_port=5666
         cidr_blocks = [aws_subnet.nagios.cidr_block]
     }
+
+    ingress {
+        description = "Allow ICMP"
+        protocol = "icmp"
+        from_port = -1
+        to_port=-1
+        cidr_blocks = [aws_subnet.nagios.cidr_block]
+    }
 }
 
 
@@ -136,6 +145,17 @@ resource "aws_key_pair" "kms_key" {
   key_name   = "nagios-kms"
   public_key = var.ssh_pubkey
 }
+
+# resource "aws_ebs_volume" "extra-volume"{
+#     availability_zone = var.availability_zone
+#     size              = 40
+# }
+
+# resource "aws_volume_attachment" "ebs_att"{
+#     device_name = var.device_name
+#     volume_id = aws_ebs_volume.extra-volume.id
+#     instance_id = aws_instance.nagios-nrpe.id
+# }
 
 resource "aws_instance" "nagios-web" {
     ami = "ami-0bd717e4b66a1927a"

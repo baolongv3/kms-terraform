@@ -23,3 +23,14 @@ variable "instance_type"{
 }
 
 
+variable "availability_zone" {
+    description = "Availability Zone for subnet and EBS Volume"
+    type = string
+    default = "ap-southeast-1c"
+}
+
+variable "device_name" {
+    description = "Device mountpoint for EBS Drive"
+    type = string
+    default = "/dev/sdh"
+}
