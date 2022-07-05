@@ -146,16 +146,8 @@ resource "aws_key_pair" "kms_key" {
   public_key = var.ssh_pubkey
 }
 
-# resource "aws_ebs_volume" "extra-volume"{
-#     availability_zone = var.availability_zone
-#     size              = 40
-# }
 
-# resource "aws_volume_attachment" "ebs_att"{
-#     device_name = var.device_name
-#     volume_id = aws_ebs_volume.extra-volume.id
-#     instance_id = aws_instance.nagios-nrpe.id
-# }
+
 
 resource "aws_instance" "nagios-web" {
     ami = "ami-0bd717e4b66a1927a"
@@ -190,4 +182,17 @@ resource "aws_eip" "nagios-web" {
 resource "aws_eip" "nagios-nrpe" {
     instance = aws_instance.nagios-nrpe.id
     vpc = true
+}
+
+# EC2 Volume for LVM demo
+
+resource "aws_ebs_volume" "extra-volume"{
+    availability_zone = var.availability_zone
+    size              = 40
+}
+
+resource "aws_volume_attachment" "ebs_att"{
+    device_name = var.device_name
+    volume_id = aws_ebs_volume.extra-volume.id
+    instance_id = aws_instance.nagios-nrpe.id
 }
